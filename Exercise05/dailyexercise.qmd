@@ -1,0 +1,49 @@
+---
+title: "Daily Exercise 05"
+format: html
+editor: visual
+---
+library(palmerspenguins)
+---
+
+\# Attach the \`palmerspenguins\` package
+
+# 1. Examine at the dataset using the ?Help page
+
+-   ??penguins
+
+\# 2. what is the class of the penguins dataset?
+
+-   tbl
+
+\# 3. what is the structure of the penguins dataset?
+
+-   tibble 344 x 8
+
+\# 4. what are the dimensions of the penguins dataset?
+
+-   344 x 8
+
+\# 5. what are the column names of the penguins dataset?
+
+-   species, island, bill length, bill depth, flipper length, body mass, sex, year
+
+\# 6. what type of data is \`flipper_length_mm\` and \`Island\`?
+
+-   integer and factor
+
+\# 7. what is the mean flipper length of the penguins?
+
+-   200.9152
+
+\# 8. what is the standard deviation of flipper length in the penguins? 1
+
+-   4.06171
+
+\# 9. what is the median body mass of the penguins?
+
+-   4050
+
+\# 10. what is the Island of the 100th penguin?
+
+-   Biscoe Dream Torgersen
