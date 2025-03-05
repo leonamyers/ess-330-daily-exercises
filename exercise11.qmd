@@ -12,6 +12,8 @@ library(tidyverse)
 library(recipes)
 library(broom)
 library(ggpubr)
+library(ggplot2)
+library(qqplotr)
 ```
 ### 1. Load and explore dataset
 ```{r}
@@ -79,7 +81,7 @@ print(sum_model)
 ggplot(augmented_data, aes(.resid)) + geom_histogram(bins = 30) + ggtitle("Residual Histogram")
 
 ```
-```{r}
+```{r, error = TRUE}
 ggqqplot(augmented_data$.resid) + ggtitle("QQ Plot")
 ```
 
