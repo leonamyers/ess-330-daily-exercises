@@ -1,0 +1,93 @@
+---
+title: "Exercise 11"
+author: "Leona Myers"
+date: 2025-03-04
+format: html
+execute:
+  echo: true
+---
+## Part 1
+```{r}
+library(tidyverse)
+library(recipes)
+library(broom)
+library(ggpubr)
+```
+### 1. Load and explore dataset
+```{r}
+data("airquality")
+str(airquality)
+summary(airquality)
+```
+### 2. Shapiro-Wilk Normality Test
+```{r}
+shapiro.test(airquality$Ozone)
+shapiro.test(airquality$Temp)
+shapiro.test(airquality$Solar.R)
+shapiro.test(airquality$Wind)
+```
+### 3. The purpose is to determine whether a given data set is normally distributed
+### 4. The null hypothesis is the population is normally distributed, the alternative hypothesis is the population is not normally distributed
+### 5. The null hypothesis staes that the data follows a normal dsitribution. Since p < 0 for all, we reject the null. 
+
+## Part 2: Data transformation and Feature engineering
+### 6. Create a new column
+```{r}
+airquality <- airquality %>%
+  mutate(Season = case_when(
+    Month %in% c(11, 12, 1) ~ "Winter",
+    Month %in% c(2, 3, 4) ~ "Spring",
+    Month %in% c(5, 6, 7) ~ "Summer",
+    Month %in% c(8, 9, 10) ~ "Fall"
+  ))
+```
+### 7. Use table to count observations per season: Fall - 61, Summer - 92
+```{r}
+table(airquality$Season)
+```
+
+##Part 3: Data Preprocessing
+### 8. Normalize predictor variables
+```{r}
+rec <- recipe(Ozone ~ Temp + Solar.R + Wind + Season, data = airquality) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_impute_mean(all_numeric_predictors())
+
+processed_data <- rec %>% prep() %>% bake(new_data = NULL)
+```
+### 9. The purpose is to organise and structure data 
+### 10. You can use mutate() 
+### 11. Prep and Bake
+### 12. Prep computes neccesary values based on training data. Bake applies the transformation to the dataset
+
+## Part 4: Building a Linear Regression Model
+```{r}
+lm_model <- lm(Ozone ~ ., data = processed_data)
+sum_model <- summary(lm_model)
+print(sum_model)
+```
+
+### 13. Completed
+### 14. Coefficents tell you how much the variable, Ozone, is expoected to change when a predictor changes by one unit. R squared tells you how much of the variation in the dependant variable is explained by the model, the model explains 63.18% of variability in ozone levels. P values tell you whether the predictors are statistically significant, this model is statistically significant  
+
+## Part 5: Model Diagnostics
+### 15. Augment Data with residuals and fitted values
+
+### 16. Extract residuals 
+### 17. Use ggarange to plot this as one image
+```{r}
+ggarrange(
+  ggplot(augmented_data, aes(.resid)) + geom_histogram(bins = 30) + ggtitle("Residual Histogram"),
+  ggqqplot(augmented_data$.resid) + ggtitle("QQ Plot"),
+  ncol = 2
+)
+```
+### 18. Create a scatter plot
+```{r}
+ggscatter(augmented_data, x = "Ozone", y = ".fitted",
+          add = "reg.line", conf.int = TRUE,
+          cor.coef = TRUE, cor.method = "spearman",
+          ellipse = TRUE)
+```
+### 19. This model is not  very strong because it deviates from normal dsitribution
+

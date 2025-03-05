@@ -1,0 +1,68 @@
+---
+title: "exercise09-10"
+author: Leona Myers
+date: 03-02-2025
+format: html
+execute:
+  echo: true
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(visdat)
+library("broom")
+```
+
+```{r}
+data("airquality")
+```
+```{r}
+?airquality
+vis_dat(airquality)
+```
+1: completed
+2: The data needs cleaning, there are NA values
+```{r}
+cleaned_data <- airquality %>%
+  na.omit()
+```
+```{r}
+
+```
+
+```{r}
+model <- lm(Ozone ~ Temp, data = cleaned_data)
+```
+3. Temperature is a reasonable predictor since ozone formation is influenced by temperature.
+```{r}
+summary (model)
+```
+4. This seems like a valid model
+```{r}
+r2_value <- summary(model)$r.squared
+cat("R² value:", round(r2_value, 2), "\n")
+cat("The R² value represents the proportion of variance in Ozone explained by Temperature.\n")
+```
+5. R² value: 0.49 
+The R² value represents the proportion of variance in Ozone explained by Temperature.
+
+```{r}
+augmented_data <- augment(model, newdata = cleaned_data)
+
+```
+6. completed
+```{r}
+ggplot(augmented_data, aes(x = Ozone, y = .fitted)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +  # 1:1 line
+  labs(
+    title = "Actual vs Predicted Ozone Levels",
+    x = "Actual Ozone",
+    y = "Predicted Ozone",
+    subtitle = paste("Correlation:", round(cor(augmented_data$Ozone, augmented_data$.fitted), 2))
+  ) +
+  theme_minimal()
+```
+7. Completed
+
