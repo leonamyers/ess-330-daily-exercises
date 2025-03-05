@@ -75,15 +75,16 @@ print(sum_model)
 
 ### 16. Extract residuals 
 ### 17. Use ggarange to plot this as one image
-```{r}
-ggarrange(
-  ggplot(augmented_data, aes(.resid)) + geom_histogram(bins = 30) + ggtitle("Residual Histogram"),
-  ggqqplot(augmented_data$.resid) + ggtitle("QQ Plot"),
-  ncol = 2
-)
+```{r, error = TRUE}
+ggplot(augmented_data, aes(.resid)) + geom_histogram(bins = 30) + ggtitle("Residual Histogram")
+
 ```
-### 18. Create a scatter plot
 ```{r}
+ggqqplot(augmented_data$.resid) + ggtitle("QQ Plot")
+```
+
+### 18. Create a scatter plot
+```{r, error = TRUE}
 ggscatter(augmented_data, x = "Ozone", y = ".fitted",
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE, cor.method = "spearman",
