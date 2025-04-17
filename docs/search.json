@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "exercise-21-csu.html",
+    "href": "exercise-21-csu.html",
+    "title": "Daily Exercise 21",
+    "section": "",
+    "text": "library(tsibble)\n\nWarning: package 'tsibble' was built under R version 4.4.3\n\n\nRegistered S3 method overwritten by 'tsibble':\n  method               from \n  as_tibble.grouped_df dplyr\n\n\n\nAttaching package: 'tsibble'\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, union\n\nlibrary(feasts)\n\nWarning: package 'feasts' was built under R version 4.4.3\n\n\nLoading required package: fabletools\n\n\nWarning: package 'fabletools' was built under R version 4.4.3\n\nlibrary(plotly)\n\nWarning: package 'plotly' was built under R version 4.4.3\n\n\nLoading required package: ggplot2\n\n\n\nAttaching package: 'plotly'\n\n\nThe following object is masked from 'package:ggplot2':\n\n    last_plot\n\n\nThe following object is masked from 'package:stats':\n\n    filter\n\n\nThe following object is masked from 'package:graphics':\n\n    layout\n\nlibrary(ggplot2)\nlibrary(dataRetrieval)\n\nWarning: package 'dataRetrieval' was built under R version 4.4.3\n\nlibrary(lubridate)\n\n\nAttaching package: 'lubridate'\n\n\nThe following object is masked from 'package:tsibble':\n\n    interval\n\n\nThe following objects are masked from 'package:base':\n\n    date, intersect, setdiff, union\n\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union"
+  },
+  {
+    "objectID": "exercise-21-csu.html#data-retrieval",
+    "href": "exercise-21-csu.html#data-retrieval",
+    "title": "Daily Exercise 21",
+    "section": "Data Retrieval",
+    "text": "Data Retrieval\n\nlibrary(dataRetrieval)\nlibrary(dplyr)\nlibrary(tsibble)\n\n# Example: Cache la Poudre River at Mouth (USGS site 06752260)\npoudre_flow &lt;- readNWISdv(siteNumber = \"06752260\",    # Download data from USGS for site 06752260\n                          parameterCd = \"00060\",      # Parameter code 00060 = discharge in cfs)\n                          startDate = \"2013-01-01\",   # Set the start date\n                          endDate = \"2023-12-31\") |&gt;  # Set the end date\n  renameNWISColumns() |&gt;                              # Rename columns to standard names (e.g., \"Flow\", \"Date\")\n  mutate(Date = yearmonth(Date)) |&gt;                   # Convert daily Date values into a year-month format (e.g., \"2023 Jan\")\n  group_by(Date) |&gt;                                   # Group the data by the new monthly Date\n  summarise(Flow = mean(Flow))                       # Calculate the average daily flow for each month\n\nGET:https://waterservices.usgs.gov/nwis/dv/?site=06752260&format=waterml%2C1.1&ParameterCd=00060&StatCd=00003&startDT=2013-01-01&endDT=2023-12-31"
+  },
+  {
+    "objectID": "exercise-21-csu.html#convert-to-tsibble",
+    "href": "exercise-21-csu.html#convert-to-tsibble",
+    "title": "Daily Exercise 21",
+    "section": "Convert to tsibble",
+    "text": "Convert to tsibble\n\npoudre_ts &lt;- poudre_flow |&gt;\n  as_tsibble(index = Date)"
+  },
+  {
+    "objectID": "exercise-21-csu.html#plotting-the-time-series",
+    "href": "exercise-21-csu.html#plotting-the-time-series",
+    "title": "Daily Exercise 21",
+    "section": "Plotting the time series",
+    "text": "Plotting the time series\n\nflow_plot &lt;- ggplot(poudre_ts, aes(x = Date, y = Flow)) +\n  geom_line(color = \"steelblue\") +\n  labs(title = \"Monthly Average Flow - Cache la Poudre River\",\n       x = \"Date\", y = \"Flow (cfs)\") +\n  theme_minimal()\nflow_plot\n\n\n\n\n\n\n\n\n\nggplotly(flow_plot)"
+  },
+  {
+    "objectID": "exercise-21-csu.html#subseries",
+    "href": "exercise-21-csu.html#subseries",
+    "title": "Daily Exercise 21",
+    "section": "Subseries",
+    "text": "Subseries\n\npoudre_ts |&gt;\n  gg_subseries(Flow)\n\n\n\n\n\n\n\n\nThis graph shows strong seasonal variation, the highest streamflows consistently occur during May and June with peaks above 2000 cubic feet per second while flows are lower in the winter months. Seasons are defined by calendar months. The subseries are montly time series broken out by month across year."
+  },
+  {
+    "objectID": "exercise-21-csu.html#decompose",
+    "href": "exercise-21-csu.html#decompose",
+    "title": "Daily Exercise 21",
+    "section": "Decompose",
+    "text": "Decompose\n\nlibrary(fabletools) \n\ndecomp &lt;- poudre_ts |&gt;\n  model(STL(Flow ~ season(window = \"periodic\"))) |&gt;\n  components()\n\nautoplot(decomp)\n\n\n\n\n\n\n\n\nThere is a gradual decline in flow over the decade which could be tied to climate trends. The yearly pattern is very consistent with peaks in May and June. There are some peaks and dips in the remainder."
+  }
+]
