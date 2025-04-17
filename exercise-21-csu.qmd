@@ -1,0 +1,76 @@
+---
+title: "Daily Exercise 21"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+```{r}
+library(tsibble)
+library(feasts)
+library(plotly)
+library(ggplot2)
+library(dataRetrieval)
+library(lubridate)
+library(dplyr)
+```
+## Data Retrieval 
+```{r}
+library(dataRetrieval)
+library(dplyr)
+library(tsibble)
+
+# Example: Cache la Poudre River at Mouth (USGS site 06752260)
+poudre_flow <- readNWISdv(siteNumber = "06752260",    # Download data from USGS for site 06752260
+                          parameterCd = "00060",      # Parameter code 00060 = discharge in cfs)
+                          startDate = "2013-01-01",   # Set the start date
+                          endDate = "2023-12-31") |>  # Set the end date
+  renameNWISColumns() |>                              # Rename columns to standard names (e.g., "Flow", "Date")
+  mutate(Date = yearmonth(Date)) |>                   # Convert daily Date values into a year-month format (e.g., "2023 Jan")
+  group_by(Date) |>                                   # Group the data by the new monthly Date
+  summarise(Flow = mean(Flow))                       # Calculate the average daily flow for each month
+```
+
+## Convert to tsibble
+```{r}
+poudre_ts <- poudre_flow |>
+  as_tsibble(index = Date)
+```
+
+## Plotting the time series
+```{r}
+flow_plot <- ggplot(poudre_ts, aes(x = Date, y = Flow)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Monthly Average Flow - Cache la Poudre River",
+       x = "Date", y = "Flow (cfs)") +
+  theme_minimal()
+flow_plot
+
+```
+
+```{r}
+ggplotly(flow_plot)
+```
+
+## Subseries
+```{r}
+poudre_ts |>
+  gg_subseries(Flow)
+```
+This graph shows strong seasonal variation, the highest streamflows consistently occur during May and June with peaks above 2000 cubic feet per second while flows are lower in the winter months. Seasons are defined by calendar months. The subseries are montly time series broken out by month across year.
+
+## Decompose
+```{r}
+library(fabletools) 
+
+decomp <- poudre_ts |>
+  model(STL(Flow ~ season(window = "periodic"))) |>
+  components()
+
+autoplot(decomp)
+
+```
+There is a gradual decline in flow over the decade which could be tied to climate trends. The yearly pattern is very consistent with peaks in May and June. There are some peaks and dips in the remainder. 
