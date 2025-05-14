@@ -8,7 +8,8 @@ format: html
 execute:
   echo: true
 ---
-```{r}
+```{r setup, include=FALSE}
+# Load necessary libraries
 library(sf)
 library(dplyr)
 library(terra)
@@ -16,7 +17,11 @@ library(ggplot2)
 library(tmap)
 library(tidyverse)
 library(osmdata)
+```
 
+## Load and Process Spatial Data
+
+```{r}
 fc <- getbb("Fort Collins, Colorado")
 
 bbox_coords <- c(fc["x", "min"], fc["y", "min"],
@@ -26,61 +31,57 @@ bbox_coords <- c(fc["x", "min"], fc["y", "min"],
                  fc["x", "min"], fc["y", "min"])
 
 fc_sf <- st_as_sf(st_sfc(st_polygon(list(matrix(bbox_coords, ncol = 2, byrow = TRUE)))))
+```
 
+## Extract River Data
+
+```{r}
 foco_rivers <- opq(st_bbox(fc_sf)) |>
   add_osm_feature("waterway") |>
   osmdata_sf()
 
-poudre <- foco_rivers$osm_lines %>%
-  filter(grepl("Cache la Poudre", name, ignore.case = TRUE)) %>%
-  st_transform(crs(dem)) %>%
-  st_union() %>%
-  st_as_sf()
-
-print(poudre)
-
-poudre_pts <- st_cast(poudre, "POINT")
-
-class(poudre_pts)  
-
-poudre_pts_vect <- terra::vect(poudre_pts)
-
-class(poudre_pts_vect)  
-
-Sys.setenv(AWS_NO_SIGN_REQUEST = "YES")
+Sys.setenv(AWS_NO_SIGN_REQUEST = "YES") 
 dem <- rast('/vsis3/lynker-spatial/gridded-resources/dem.vrt')
 
+poudre <- foco_rivers$osm_lines %>%
+  filter(grepl("Cache la Poudre", name, ignore.case = TRUE)) %>%
+  st_transform(crs(dem)) %>% 
+  st_union() %>%
+  st_as_sf()
+print(poudre)
+```
+
+## Convert River Data to Points
+
+```{r}
+poudre_pts <- st_cast(poudre, "POINT")
+print(paste("Class of Poudre points:", class(poudre_pts)))
+poudre_pts_vect <- terra::vect(poudre_pts)
+print(paste("Class of Poudre points (terra vector):", class(poudre_pts_vect)))  
+```
+
+## Extract Elevation Values
+
+```{r}
 elev_vals <- terra::extract(dem, poudre_pts_vect)
 
 profile_data <- bind_cols(poudre_pts, elev_vals) %>%
   mutate(ID = row_number())
-```
-```{r}
-straight_dist <- st_distance(poudre_pts[1,], poudre_pts[nrow(poudre_pts),])
 
-sinuosity <- as.numeric(river_length) / as.numeric(straight_dist)
+head(profile_data)
 ```
 
-```{r}
-elev <- profile_data %>% select(dem)
-
-sinuosity <- as.numeric(river_length) / as.numeric(straight_dist)
-start_elev <- elev$dem[1]
-
-start_elev <- elev$dem[1]
-end_elev <- elev$dem[nrow(elev)]
-
-slope <- 100 * (start_elev - end_elev) / units::drop_units(river_length)
-```
+## Plot Elevation Profile
 
 ```{r}
 ggplot(profile_data, aes(x = ID, y = dem)) +
-  geom_line(color = "steelblue") +
-  labs(title = "Cache la Poudre River Elevation Profile",
-       x = "Point Along River",
-       y = "Elevation (cm)") +
+  geom_line(color = "blue") +
+  labs(title = "Elevation Profile of Cache la Poudre River",
+       x = "Point ID",
+       y = "Elevation (m)") +
   theme_minimal()
 ```
+
 
 ```{r}
 ggplot(profile_data) +
