@@ -1,0 +1,19 @@
+---
+title: "Daily Exercise 21"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+```{r}
+remotes::install_github("mikejohnson51/AOI")
+```
+
+```{r}
+sf::sf_extSoftVersion()
+terra::gdal()
+```
+

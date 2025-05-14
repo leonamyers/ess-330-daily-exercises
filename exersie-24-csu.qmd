@@ -1,0 +1,85 @@
+---
+title: "Daily Exercise 24"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+
+```{r}
+library(readr)
+library(dplyr)
+
+cities_data <- read_csv("data/uscities.csv")
+
+glimpse(cities_data)
+head(cities_data)
+```
+```{r}
+library(sf)
+
+cities_sf <- st_as_sf(
+  cities_data,
+  coords = c("lng", "lat"), 
+  crs = 4326  
+)
+
+```
+```{r}
+library(AOI)
+
+larimer_county <- aoi_get(state = "CO", county = "Larimer")
+```
+
+```{r}
+cities_in_larimer <- st_filter(cities_sf, larimer_county)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot() +
+  geom_sf(data = larimer_county, fill = NA, color = "black") +
+  geom_sf(data = cities_in_larimer, color = "blue", size = 2) +
+  theme_minimal()
+```
+```{r}
+three_largest_cities <- cities_in_larimer %>%
+  arrange(desc(population)) %>%
+  slice(1:3)
+
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = larimer_county, fill = NA, color = "black") +
+  geom_sf(data = cities_in_larimer, color = "blue", size = 2) +
+  geom_sf(data = three_largest_cities, color = "red", size = 4) + 
+  theme_minimal()
+```
+```{r}
+install.packages("ggrepel")
+library(ggrepel)
+
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = larimer_county, fill = NA, color = "black") +
+  geom_sf(data = cities_in_larimer, color = "blue", size = 2) +
+  geom_sf(data = three_largest_cities, color = "red", size = 4) +
+  ggrepel::geom_label_repel(
+    data = three_largest_cities,
+    aes(label = city, geometry = geometry),
+    stat = "sf_coordinates",
+    size = 3
+  ) +
+  theme_minimal()
+
+ggsave("img/larimer_cities_map.png")
+
+```
+

@@ -1,0 +1,92 @@
+---
+title: "Daily Exercise 27-28"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+```{r}
+library(sf)
+library(dplyr)
+library(terra)
+library(ggplot2)
+library(tmap)
+library(tidyverse)
+library(osmdata)
+
+fc <- getbb("Fort Collins, Colorado")
+
+bbox_coords <- c(fc["x", "min"], fc["y", "min"],
+                 fc["x", "max"], fc["y", "min"],
+                 fc["x", "max"], fc["y", "max"],
+                 fc["x", "min"], fc["y", "max"],
+                 fc["x", "min"], fc["y", "min"])
+
+fc_sf <- st_as_sf(st_sfc(st_polygon(list(matrix(bbox_coords, ncol = 2, byrow = TRUE)))))
+
+foco_rivers <- opq(st_bbox(fc_sf)) |>
+  add_osm_feature("waterway") |>
+  osmdata_sf()
+
+poudre <- foco_rivers$osm_lines %>%
+  filter(grepl("Cache la Poudre", name, ignore.case = TRUE)) %>%
+  st_transform(crs(dem)) %>%
+  st_union() %>%
+  st_as_sf()
+
+print(poudre)
+
+poudre_pts <- st_cast(poudre, "POINT")
+
+class(poudre_pts)  
+
+poudre_pts_vect <- terra::vect(poudre_pts)
+
+class(poudre_pts_vect)  
+
+Sys.setenv(AWS_NO_SIGN_REQUEST = "YES")
+dem <- rast('/vsis3/lynker-spatial/gridded-resources/dem.vrt')
+
+elev_vals <- terra::extract(dem, poudre_pts_vect)
+
+profile_data <- bind_cols(poudre_pts, elev_vals) %>%
+  mutate(ID = row_number())
+```
+```{r}
+straight_dist <- st_distance(poudre_pts[1,], poudre_pts[nrow(poudre_pts),])
+
+sinuosity <- as.numeric(river_length) / as.numeric(straight_dist)
+```
+
+```{r}
+elev <- profile_data %>% select(dem)
+
+sinuosity <- as.numeric(river_length) / as.numeric(straight_dist)
+start_elev <- elev$dem[1]
+
+start_elev <- elev$dem[1]
+end_elev <- elev$dem[nrow(elev)]
+
+slope <- 100 * (start_elev - end_elev) / units::drop_units(river_length)
+```
+
+```{r}
+ggplot(profile_data, aes(x = ID, y = dem)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Cache la Poudre River Elevation Profile",
+       x = "Point Along River",
+       y = "Elevation (cm)") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(profile_data) +
+  geom_sf(aes(color = dem), size = 0.8) +
+  scale_color_viridis_c(name = "Elevation (cm)") +
+  labs(title = "Cache la Poudre River with Elevation Gradient") +
+  theme_minimal()
+```
+

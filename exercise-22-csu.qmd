@@ -1,0 +1,107 @@
+---
+title: "Daily Exercise 21"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+```{r}
+library(tidyverse)
+library(tsibble)
+library(dataRetrieval)
+library(lubridate)
+library(zoo)
+library(modeltime)
+library(timetk)
+library(rsample)
+library(parsnip)
+library(tsibble)
+
+poudre_flow <- readNWISdv(
+  siteNumber = "06752260",
+  parameterCd = "00060",
+  startDate = "2013-01-01",
+  endDate = "2023-12-31"
+) |>
+  renameNWISColumns() |>
+  mutate(Date = as.yearmon(Date)) |>
+  group_by(Date) |>
+  summarise(Flow = mean(Flow, na.rm = TRUE)) |>
+  mutate(Date = as.Date(Date)) 
+poudre_ts <- poudre_flow |>
+  as_tsibble(index = Date)
+
+```
+```{r}
+splits <- initial_time_split(poudre_ts, prop = 0.9)
+training_data <- training(splits)
+testing_data  <- testing(splits)
+```
+
+```{r}
+model_prophet <- prophet_reg() |>
+  set_engine("prophet") |>
+  fit(Flow ~ Date, data = training_data)
+
+model_arima <- arima_reg() |>
+  set_engine("auto_arima") |>
+  fit(Flow ~ Date, data = training_data)
+
+models_tbl <- modeltime_table(
+  model_prophet,
+  model_arima
+)
+
+```
+```{r}
+forecast_tbl <- models_tbl |>
+  modeltime_forecast(
+    new_data = testing_data,
+    actual_data = poudre_ts
+  )
+```
+```{r}
+observed_2024 <- readNWISdv(
+  siteNumber = "06752260",
+  parameterCd = "00060",
+  startDate = "2024-01-01",
+  endDate = "2024-12-31"
+) |>
+  renameNWISColumns() |>
+  mutate(Date = as.yearmon(Date)) |>
+  group_by(Date) |>
+  summarise(observed_flow = mean(Flow, na.rm = TRUE)) |>
+  mutate(Date = as.Date(Date))
+
+```
+```{r}
+forecast_prophet <- forecast_tbl |>
+  filter(.model_desc == "PROPHET") |>
+  select(Date = .index, predicted_flow = .value)
+
+comparison <- left_join(forecast_prophet, observed_2024, by = "Date")
+
+```
+
+```{r}
+lm_model <- lm(observed_flow ~ predicted_flow, data = comparison)
+summary(lm_model)$r.squared
+```
+
+```{r}
+ggplot(comparison, aes(x = predicted_flow, y = observed_flow)) +
+  geom_point(color = "steelblue") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray40") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + 
+  labs(
+    title = "Predicted vs Observed Monthly Streamflow",
+    x = "Predicted Flow (cfs)",
+    y = "Observed Flow (cfs)"
+  ) +
+  theme_minimal()
+
+```
+

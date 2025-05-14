@@ -1,0 +1,96 @@
+---
+title: "Daily Exercise 25"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(AOI)
+library(tmap)
+library(tigris)
+```
+
+```{r}
+rivers <- read_sf("data/MajorRivers.shp")
+
+rivers
+```
+
+```{r}
+mississippi <- rivers %>%
+  filter(str_detect(NAME, "Mississippi|Missouri|Ohio|Arkansas|Red River"))
+```
+
+```{r}
+options(tigris_use_cache = TRUE)
+counties <- counties(cb = TRUE, year = 2020) %>%
+  st_transform(crs = st_crs(rivers))
+```
+```{r}
+counties_mississippi <- st_filter(counties, mississippi)
+```
+
+```{r}
+tmap_mode("view")
+tm_shape(counties_mississippi) + 
+  tm_borders(col = "black") +
+tm_shape(mississippi) +
+  tm_lines(col = "blue")
+```
+```{r}
+library(readr)
+
+cities <- read_csv("data/uscities.csv") 
+```
+```{r}
+library(sf)
+
+cities_sf <- st_as_sf(cities, coords = c("lng", "lat"), crs = 4326)  
+cities_sf <- st_transform(cities_sf, crs = st_crs(counties))  
+```
+
+```{r}
+intersecting_counties <- counties %>%
+  st_filter(mississippi, .predicate = st_intersects)
+
+city_matches <- st_join(cities_sf, intersecting_counties, left = FALSE)
+```
+
+```{r}
+library(dplyr)
+
+county_pop <- city_matches %>%
+  group_by(GEOID) %>%  
+  summarize(total_pop = sum(population, na.rm = TRUE))
+
+```
+
+```{r}
+intersecting_counties <- intersecting_counties %>%
+  left_join(st_drop_geometry(county_pop), by = "GEOID")
+```
+
+```{r}
+library(ggplot2)
+
+ggplot() +
+  geom_sf(data = mississippi, color = "blue", size = 0.5) +
+  
+  geom_sf(data = intersecting_counties, aes(fill = total_pop), color = "black", size = 0.1) +
+  
+  scale_fill_viridis_c(option = "C", name = "Total Urban Population") +
+  theme_minimal() +
+  labs(title = "Counties Intersecting the Mississippi River System",
+       subtitle = "Color-coded by Total Urban Population") +
+  theme(legend.position = "bottom")
+
+ggsave("rivercountiesmap.png")
+```
+

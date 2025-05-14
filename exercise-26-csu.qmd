@@ -1,0 +1,55 @@
+---
+title: "Daily Exercise 25"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Leona Myers
+    email: "leona18@colostate.edu"
+format: html
+execute:
+  echo: true
+---
+
+```{r}
+
+url <- 'https://raw.githubusercontent.com/mikejohnson51/csu-ess-330/refs/heads/main/resources/foco-elev-cm.tif'
+vsi_url <- paste0('https://github.com/mikejohnson51/csu-ess-330/blob/main/resources/foco-elev-cm.tif?raw=true')
+```
+
+```{r}
+install.packages("terra")
+library(terra)
+
+raster_data <- rast(vsi_url)
+
+print(raster_data)
+
+```
+
+```{r}
+print(raster_data)
+```
+
+```{r}
+raster_data_feet <- raster_data * 0.0328084
+```
+
+```{r}
+elevation_df <- values(raster_data_feet, dataframe = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(ggpubr)
+
+density_plot <- ggplot(elevation_df, aes(x = dem)) +
+  geom_density(fill = "blue", alpha = 0.5) +
+  labs(title = "Density Plot of Elevation in Feet",
+       x = "Elevation (Feet)", y = "Density") +
+  theme_minimal()
+
+print(density_plot)
+
+ggsave("img/elevation_density_plot.png")
+
+```
+
