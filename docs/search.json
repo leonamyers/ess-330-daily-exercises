@@ -1,51 +1,44 @@
 [
   {
-    "objectID": "exercise-21-csu.html",
-    "href": "exercise-21-csu.html",
-    "title": "Daily Exercise 21",
+    "objectID": "exercise-27-28-csu.html",
+    "href": "exercise-27-28-csu.html",
+    "title": "Daily Exercise 27-28",
     "section": "",
-    "text": "library(tsibble)\n\nWarning: package 'tsibble' was built under R version 4.4.3\n\n\nRegistered S3 method overwritten by 'tsibble':\n  method               from \n  as_tibble.grouped_df dplyr\n\n\n\nAttaching package: 'tsibble'\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, union\n\nlibrary(feasts)\n\nWarning: package 'feasts' was built under R version 4.4.3\n\n\nLoading required package: fabletools\n\n\nWarning: package 'fabletools' was built under R version 4.4.3\n\nlibrary(plotly)\n\nWarning: package 'plotly' was built under R version 4.4.3\n\n\nLoading required package: ggplot2\n\n\n\nAttaching package: 'plotly'\n\n\nThe following object is masked from 'package:ggplot2':\n\n    last_plot\n\n\nThe following object is masked from 'package:stats':\n\n    filter\n\n\nThe following object is masked from 'package:graphics':\n\n    layout\n\nlibrary(ggplot2)\nlibrary(dataRetrieval)\n\nWarning: package 'dataRetrieval' was built under R version 4.4.3\n\nlibrary(lubridate)\n\n\nAttaching package: 'lubridate'\n\n\nThe following object is masked from 'package:tsibble':\n\n    interval\n\n\nThe following objects are masked from 'package:base':\n\n    date, intersect, setdiff, union\n\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union"
+    "text": "fc &lt;- getbb(\"Fort Collins, Colorado\")\n\nbbox_coords &lt;- c(fc[\"x\", \"min\"], fc[\"y\", \"min\"],\n                 fc[\"x\", \"max\"], fc[\"y\", \"min\"],\n                 fc[\"x\", \"max\"], fc[\"y\", \"max\"],\n                 fc[\"x\", \"min\"], fc[\"y\", \"max\"],\n                 fc[\"x\", \"min\"], fc[\"y\", \"min\"])\n\nfc_sf &lt;- st_as_sf(st_sfc(st_polygon(list(matrix(bbox_coords, ncol = 2, byrow = TRUE)))))"
   },
   {
-    "objectID": "exercise-21-csu.html#data-retrieval",
-    "href": "exercise-21-csu.html#data-retrieval",
-    "title": "Daily Exercise 21",
-    "section": "Data Retrieval",
-    "text": "Data Retrieval\n\nlibrary(dataRetrieval)\nlibrary(dplyr)\nlibrary(tsibble)\n\n# Example: Cache la Poudre River at Mouth (USGS site 06752260)\npoudre_flow &lt;- readNWISdv(siteNumber = \"06752260\",    # Download data from USGS for site 06752260\n                          parameterCd = \"00060\",      # Parameter code 00060 = discharge in cfs)\n                          startDate = \"2013-01-01\",   # Set the start date\n                          endDate = \"2023-12-31\") |&gt;  # Set the end date\n  renameNWISColumns() |&gt;                              # Rename columns to standard names (e.g., \"Flow\", \"Date\")\n  mutate(Date = yearmonth(Date)) |&gt;                   # Convert daily Date values into a year-month format (e.g., \"2023 Jan\")\n  group_by(Date) |&gt;                                   # Group the data by the new monthly Date\n  summarise(Flow = mean(Flow))                       # Calculate the average daily flow for each month\n\nGET:https://waterservices.usgs.gov/nwis/dv/?site=06752260&format=waterml%2C1.1&ParameterCd=00060&StatCd=00003&startDT=2013-01-01&endDT=2023-12-31"
-  },
-  {
-    "objectID": "exercise-21-csu.html#convert-to-tsibble",
-    "href": "exercise-21-csu.html#convert-to-tsibble",
-    "title": "Daily Exercise 21",
-    "section": "Convert to tsibble",
-    "text": "Convert to tsibble\n\npoudre_ts &lt;- poudre_flow |&gt;\n  as_tsibble(index = Date)"
-  },
-  {
-    "objectID": "exercise-21-csu.html#plotting-the-time-series",
-    "href": "exercise-21-csu.html#plotting-the-time-series",
-    "title": "Daily Exercise 21",
-    "section": "Plotting the time series",
-    "text": "Plotting the time series\n\nflow_plot &lt;- ggplot(poudre_ts, aes(x = Date, y = Flow)) +\n  geom_line(color = \"steelblue\") +\n  labs(title = \"Monthly Average Flow - Cache la Poudre River\",\n       x = \"Date\", y = \"Flow (cfs)\") +\n  theme_minimal()\nflow_plot\n\n\n\n\n\n\n\n\n\nggplotly(flow_plot)"
-  },
-  {
-    "objectID": "exercise-21-csu.html#subseries",
-    "href": "exercise-21-csu.html#subseries",
-    "title": "Daily Exercise 21",
-    "section": "Subseries",
-    "text": "Subseries\n\npoudre_ts |&gt;\n  gg_subseries(Flow)\n\n\n\n\n\n\n\n\nThis graph shows strong seasonal variation, the highest streamflows consistently occur during May and June with peaks above 2000 cubic feet per second while flows are lower in the winter months. Seasons are defined by calendar months. The subseries are montly time series broken out by month across year."
-  },
-  {
-    "objectID": "exercise-21-csu.html#decompose",
-    "href": "exercise-21-csu.html#decompose",
-    "title": "Daily Exercise 21",
-    "section": "Decompose",
-    "text": "Decompose\n\nlibrary(fabletools) \n\ndecomp &lt;- poudre_ts |&gt;\n  model(STL(Flow ~ season(window = \"periodic\"))) |&gt;\n  components()\n\nautoplot(decomp)\n\n\n\n\n\n\n\n\nThere is a gradual decline in flow over the decade which could be tied to climate trends. The yearly pattern is very consistent with peaks in May and June. There are some peaks and dips in the remainder."
-  },
-  {
-    "objectID": "exercise-25-csu.html",
-    "href": "exercise-25-csu.html",
-    "title": "Daily Exercise 25",
+    "objectID": "exercise-27-28-csu.html#load-and-process-spatial-data",
+    "href": "exercise-27-28-csu.html#load-and-process-spatial-data",
+    "title": "Daily Exercise 27-28",
     "section": "",
-    "text": "library(tidyverse)\n\n── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──\n✔ dplyr     1.1.4     ✔ readr     2.1.5\n✔ forcats   1.0.0     ✔ stringr   1.5.1\n✔ ggplot2   3.5.1     ✔ tibble    3.2.1\n✔ lubridate 1.9.4     ✔ tidyr     1.3.1\n✔ purrr     1.0.2     \n── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──\n✖ dplyr::filter() masks stats::filter()\n✖ dplyr::lag()    masks stats::lag()\nℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors\n\nlibrary(sf)\n\nWarning: package 'sf' was built under R version 4.4.3\n\n\nLinking to GEOS 3.13.0, GDAL 3.10.1, PROJ 9.5.1; sf_use_s2() is TRUE\n\nlibrary(AOI)\nlibrary(tmap)\n\nWarning: package 'tmap' was built under R version 4.4.3\n\nlibrary(tigris)\n\nWarning: package 'tigris' was built under R version 4.4.3\n\n\nTo enable caching of data, set `options(tigris_use_cache = TRUE)`\nin your R script or .Rprofile.\n\nAttaching package: 'tigris'\n\nThe following object is masked from 'package:AOI':\n\n    list_states\n\n\n\nrivers &lt;- read_sf(\"data/MajorRivers.shp\")\n\nrivers\n\nSimple feature collection with 98 features and 4 fields\nGeometry type: MULTILINESTRING\nDimension:     XY\nBounding box:  xmin: -164.8874 ymin: -36.96945 xmax: 160.7636 ymax: 71.39249\nGeodetic CRS:  WGS 84\n# A tibble: 98 × 5\n   NAME          SYSTEM MILES KILOMETERS                                geometry\n   &lt;chr&gt;         &lt;chr&gt;  &lt;dbl&gt;      &lt;dbl&gt;                   &lt;MULTILINESTRING [°]&gt;\n 1 Kolyma        &lt;NA&gt;   2552.      4106. ((144.8419 61.75915, 144.8258 61.8036,…\n 2 Parana        Parana 1616.      2601. ((-51.0064 -20.07941, -51.02972 -20.22…\n 3 San Francisco &lt;NA&gt;   1494.      2404. ((-46.43639 -20.25807, -46.49835 -20.2…\n 4 Japura        Amazon 1223.      1968. ((-76.71056 1.624166, -76.70029 1.6883…\n 5 Putumayo      Amazon  890.      1432. ((-76.86806 1.300553, -76.86695 1.295,…\n 6 Rio Maranon   Amazon  889.      1431. ((-73.5079 -4.459834, -73.79197 -4.621…\n 7 Ucayali       Amazon 1298.      2089. ((-73.5079 -4.459834, -73.51585 -4.506…\n 8 Guapore       Amazon  394.       634. ((-65.39585 -10.39333, -65.39578 -10.3…\n 9 Madre de Dios Amazon  568.       914. ((-65.39585 -10.39333, -65.45279 -10.4…\n10 Amazon        Amazon 1890.      3042. ((-73.5079 -4.459834, -73.45141 -4.427…\n# ℹ 88 more rows\n\n\n\nmississippi &lt;- rivers %&gt;%\n  filter(str_detect(NAME, \"Mississippi|Missouri|Ohio|Arkansas|Red River\"))\n\n\noptions(tigris_use_cache = TRUE)\ncounties &lt;- counties(cb = TRUE, year = 2020) %&gt;%\n  st_transform(crs = st_crs(rivers))\n\n\ncounties_mississippi &lt;- st_filter(counties, mississippi)\n\n\ntmap_mode(\"view\")\n\nℹ tmap mode set to \"view\".\n\ntm_shape(counties_mississippi) + \n  tm_borders(col = \"black\") +\ntm_shape(mississippi) +\n  tm_lines(col = \"blue\")\n\n\n\n\n\n\nlibrary(readr)\n\ncities &lt;- read_csv(\"data/uscities.csv\") \n\nRows: 31254 Columns: 17\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr (9): city, city_ascii, state_id, state_name, county_fips, county_name, s...\ndbl (6): lat, lng, population, density, ranking, id\nlgl (2): military, incorporated\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\n\n\nlibrary(sf)\n\ncities_sf &lt;- st_as_sf(cities, coords = c(\"lng\", \"lat\"), crs = 4326)  \ncities_sf &lt;- st_transform(cities_sf, crs = st_crs(counties))  \n\n\nintersecting_counties &lt;- counties %&gt;%\n  st_filter(mississippi, .predicate = st_intersects)\n\ncity_matches &lt;- st_join(cities_sf, intersecting_counties, left = FALSE)\n\n\nlibrary(dplyr)\n\ncounty_pop &lt;- city_matches %&gt;%\n  group_by(GEOID) %&gt;%  \n  summarize(total_pop = sum(population, na.rm = TRUE))\n\n\nintersecting_counties &lt;- intersecting_counties %&gt;%\n  left_join(st_drop_geometry(county_pop), by = \"GEOID\")\n\n\nlibrary(ggplot2)\n\nggplot() +\n  geom_sf(data = mississippi, color = \"blue\", size = 0.5) +\n  \n  geom_sf(data = intersecting_counties, aes(fill = total_pop), color = \"black\", size = 0.1) +\n  \n  scale_fill_viridis_c(option = \"C\", name = \"Total Urban Population\") +\n  theme_minimal() +\n  labs(title = \"Counties Intersecting the Mississippi River System\",\n       subtitle = \"Color-coded by Total Urban Population\") +\n  theme(legend.position = \"bottom\")"
+    "text": "fc &lt;- getbb(\"Fort Collins, Colorado\")\n\nbbox_coords &lt;- c(fc[\"x\", \"min\"], fc[\"y\", \"min\"],\n                 fc[\"x\", \"max\"], fc[\"y\", \"min\"],\n                 fc[\"x\", \"max\"], fc[\"y\", \"max\"],\n                 fc[\"x\", \"min\"], fc[\"y\", \"max\"],\n                 fc[\"x\", \"min\"], fc[\"y\", \"min\"])\n\nfc_sf &lt;- st_as_sf(st_sfc(st_polygon(list(matrix(bbox_coords, ncol = 2, byrow = TRUE)))))"
+  },
+  {
+    "objectID": "exercise-27-28-csu.html#extract-river-data",
+    "href": "exercise-27-28-csu.html#extract-river-data",
+    "title": "Daily Exercise 27-28",
+    "section": "Extract River Data",
+    "text": "Extract River Data\n\nfoco_rivers &lt;- opq(st_bbox(fc_sf)) |&gt;\n  add_osm_feature(\"waterway\") |&gt;\n  osmdata_sf()\n\nSys.setenv(AWS_NO_SIGN_REQUEST = \"YES\") \ndem &lt;- rast('/vsis3/lynker-spatial/gridded-resources/dem.vrt')\n\npoudre &lt;- foco_rivers$osm_lines %&gt;%\n  filter(grepl(\"Cache la Poudre\", name, ignore.case = TRUE)) %&gt;%\n  st_transform(crs(dem)) %&gt;% \n  st_union() %&gt;%\n  st_as_sf()\nprint(poudre)\n\nSimple feature collection with 1 feature and 0 fields\nGeometry type: MULTILINESTRING\nDimension:     XY\nBounding box:  xmin: -823445.8 ymin: 1966756 xmax: -722478 ymax: 2008678\nProjected CRS: unnamed\n                               x\n1 MULTILINESTRING ((-798489 2..."
+  },
+  {
+    "objectID": "exercise-27-28-csu.html#convert-river-data-to-points",
+    "href": "exercise-27-28-csu.html#convert-river-data-to-points",
+    "title": "Daily Exercise 27-28",
+    "section": "Convert River Data to Points",
+    "text": "Convert River Data to Points\n\npoudre_pts &lt;- st_cast(poudre, \"POINT\")\nprint(paste(\"Class of Poudre points:\", class(poudre_pts)))\n\n[1] \"Class of Poudre points: sf\"         \"Class of Poudre points: data.frame\"\n\npoudre_pts_vect &lt;- terra::vect(poudre_pts)\nprint(paste(\"Class of Poudre points (terra vector):\", class(poudre_pts_vect)))  \n\n[1] \"Class of Poudre points (terra vector): SpatVector\""
+  },
+  {
+    "objectID": "exercise-27-28-csu.html#extract-elevation-values",
+    "href": "exercise-27-28-csu.html#extract-elevation-values",
+    "title": "Daily Exercise 27-28",
+    "section": "Extract Elevation Values",
+    "text": "Extract Elevation Values\n\nelev_vals &lt;- terra::extract(dem, poudre_pts_vect)\n\nprofile_data &lt;- bind_cols(poudre_pts, elev_vals) %&gt;%\n  mutate(ID = row_number())\n\nhead(profile_data)\n\nSimple feature collection with 6 features and 2 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: -798489 ymin: 2005477 xmax: -798344.1 ymax: 2005532\nProjected CRS: unnamed\n  ID    dem                         x\n1  1 213686   POINT (-798489 2005477)\n2  2 213645 POINT (-798477.4 2005502)\n3  3 213750 POINT (-798452.7 2005523)\n4  4 213668 POINT (-798422.1 2005531)\n5  5 213599   POINT (-798384 2005532)\n6  6 213608 POINT (-798344.1 2005525)"
+  },
+  {
+    "objectID": "exercise-27-28-csu.html#plot-elevation-profile",
+    "href": "exercise-27-28-csu.html#plot-elevation-profile",
+    "title": "Daily Exercise 27-28",
+    "section": "Plot Elevation Profile",
+    "text": "Plot Elevation Profile\n\nggplot(profile_data, aes(x = ID, y = dem)) +\n  geom_line(color = \"blue\") +\n  labs(title = \"Elevation Profile of Cache la Poudre River\",\n       x = \"Point ID\",\n       y = \"Elevation (m)\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\n\nggplot(profile_data) +\n  geom_sf(aes(color = dem), size = 0.8) +\n  scale_color_viridis_c(name = \"Elevation (cm)\") +\n  labs(title = \"Cache la Poudre River with Elevation Gradient\") +\n  theme_minimal()"
   }
 ]
